@@ -7,27 +7,27 @@
 // full browser environment (See https://www.figma.com/plugin-docs/how-plugins-run).
 
 // This shows the HTML page in "ui.html".
-figma.showUI(__html__);
 
-// Calls to "parent.postMessage" from within the HTML page will trigger this
-// callback. The callback will be passed the "pluginMessage" property of the
-// posted message.
+figma.showUI(__html__, { width: 500, height: 300 });
+
 figma.ui.onmessage = async (msg: { type: string; count: number }) => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
   if (msg.type === "generateCode") {
-    const figmaJson = await genFigmaJson();
+    const figmaJson = (await genFigmaJson()) as Record<string, any>;
     const figmaImage = await genFigmaImage();
 
-    console.log("figmaJson", figmaJson);
+    console.log(
+      "figmaJson",
+      removePropertiesByKey(figmaJson, [
+        "id",
+        "componentId",
+        "layoutVersion",
+        "absoluteBoundingBox",
+      ])
+    );
     console.log("figmaImage", figmaImage);
   } else if (msg.type === "cancel") {
     figma.closePlugin();
   }
-
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  // figma.closePlugin();
 };
 
 function genFigmaJson() {
@@ -90,4 +90,21 @@ function btoa(input: string): string {
   }
 
   return output;
+}
+
+function removePropertiesByKey<T extends Record<string, any>>(
+  obj: T,
+  keysToRemove: string[]
+): T {
+  if (typeof obj !== "object" || obj === null) return obj;
+
+  for (const key in obj) {
+    if (keysToRemove.includes(key)) {
+      delete obj[key];
+    } else if (typeof obj[key] === "object" && obj[key] !== null) {
+      obj[key] = removePropertiesByKey(obj[key], keysToRemove);
+    }
+  }
+
+  return obj;
 }
