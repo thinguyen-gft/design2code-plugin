@@ -21,11 +21,18 @@ figma.ui.onmessage = async (msg: { type: string; count: number }) => {
         "id",
         "componentId",
         "layoutVersion",
-        "absoluteBoundingBox",
+        // "absoluteBoundingBox",
       ])
     );
     console.log("figmaImage", figmaImage);
-  } else if (msg.type === "cancel") {
+
+    figma.ui.postMessage({
+      type: "show-md-preview",
+      payload: "# hello, markdown!",
+    });
+  }
+
+  if (msg.type === "cancel") {
     figma.closePlugin();
   }
 };

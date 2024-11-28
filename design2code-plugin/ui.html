@@ -8,11 +8,6 @@
     font-family: Roboto;
   }
 
-  .title {
-    text-align: center;
-    margin-top: 10px;
-  }
-
   .cta-container {
     display: flex;
     justify-content: center;
@@ -38,22 +33,34 @@
     background-color: #0d99ffff;
     color: #ffffff;
   }
+
+  .md-preview {
+    background-color: #fff;
+    padding: 10px;
+    border: 1px dashed #ccc;
+    border-radius: 4px;
+    overflow: auto;
+    margin-top: 16px;
+  }
 </style>
 
-<h2 class="title">Design 2 Code</h2>
+<!-- 
+  HTML Elements 
+-->
+
 <div class="cta-container">
   <button id="generateCode" class="generate-code">Generate Code</button>
   <button id="cancel" class="cancel">Cancel</button>
-  <div id="preview"></div>
 </div>
+<div id="md-preview" class="md-preview"></div>
+
+<!-- 
+  Scripting 
+-->
 
 <script src="https://cdn.jsdelivr.net/npm/showdown@2.1.0/dist/showdown.min.js"></script>
 <script>
   const converter = new showdown.Converter();
-  const text = "# hello, markdown!";
-  const html = converter.makeHtml(text);
-  console.log("markdown html", html);
-  document.getElementById("preview").innerHTML = html;
 
   document.getElementById("generateCode").onclick = () => {
     parent.postMessage({ pluginMessage: { type: "generateCode" } }, "*");
@@ -61,5 +68,14 @@
 
   document.getElementById("cancel").onclick = () => {
     parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+  };
+
+  window.onmessage = (event) => {
+    const { type, payload } = event.data.pluginMessage;
+
+    if (type === "show-md-preview") {
+      const html = converter.makeHtml(payload);
+      document.getElementById("md-preview").innerHTML = html;
+    }
   };
 </script>
