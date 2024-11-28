@@ -1,0 +1,14 @@
+<h2>Design 2 Code</h2>
+<button id="generateCode">Generate Code</button>
+<button id="cancel">Cancel</button>
+<script>
+
+document.getElementById('generateCode').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'generateCode' } }, '*')
+}
+
+document.getElementById('cancel').onclick = () => {
+  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
+}
+
+</script>
