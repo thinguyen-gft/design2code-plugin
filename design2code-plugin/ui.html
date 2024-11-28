@@ -2,13 +2,11 @@
 <button id="generateCode">Generate Code</button>
 <button id="cancel">Cancel</button>
 <script>
+  document.getElementById("generateCode").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "generateCode" } }, "*");
+  };
 
-document.getElementById('generateCode').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'generateCode' } }, '*')
-}
-
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
-
+  document.getElementById("cancel").onclick = () => {
+    parent.postMessage({ pluginMessage: { type: "cancel" } }, "*");
+  };
 </script>
