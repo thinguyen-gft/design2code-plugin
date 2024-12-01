@@ -1,28 +1,47 @@
 const API_ENDPOINT = "http://localhost:8000/api/v1";
 
-// This shows the HTML page in "ui.html".
-figma.showUI(__html__, { width: 500, height: 300 });
-
-// Calls to "parent.postMessage" from within the HTML page will trigger this
-// callback. The callback will be passed the "pluginMessage" property of the
-// posted message.
-figma.ui.onmessage = (msg: { type: string; count: number }) => {
-  // One way of distinguishing between different types of messages sent from
-  // your HTML page is to use an object with a "type" property like this.
-  if (msg.type === "generateCode") {
-    downloadFile();
-  } else if (msg.type === "cancel") {
-    figma.closePlugin();
-  }
-
-  // Make sure to close the plugin when you're done. Otherwise the plugin will
-  // keep running, which shows the cancel button at the bottom of the screen.
-  // figma.closePlugin();
+type FormValueTypes = {
+  framework: string;
+  stylingLib: string;
 };
 
-function downloadFile() {
-  console.log("downloadFile");
+const FigmaEvent = {
+  showNotification: (content: string) => {
+    figma.ui.postMessage({
+      type: "show-notification",
+      payload: content,
+    });
+  },
+  generatingCodeSuccess: (jsxResponse: string) => {
+    figma.ui.postMessage({
+      type: "generating-code-success",
+      payload: jsxResponse,
+    });
+  },
+  generatingCodeFinished: () => {
+    figma.ui.postMessage({
+      type: "generating-code-finished",
+    });
+  },
+};
+
+figma.showUI(__html__, { width: 800, height: 500 });
+
+figma.ui.onmessage = (msg: { type: string; payload: unknown }) => {
+  if (msg.type === "form-submit") {
+    downloadFile(msg.payload as FormValueTypes);
+    return;
+  }
+};
+
+function downloadFile(formValues: FormValueTypes) {
   const selection = figma.currentPage.selection[0];
+  if (!selection) {
+    FigmaEvent.showNotification("Please select a layer");
+    FigmaEvent.generatingCodeFinished();
+    return;
+  }
+
   const jsonPromise = selection.exportAsync({
     format: "JSON_REST_V1",
   });
@@ -53,6 +72,8 @@ function downloadFile() {
       img_type: "png",
       img_base64: image,
       json_string: jsonStr,
+      framework: formValues.framework,
+      styling_lib: formValues.stylingLib,
     };
 
     console.log("submitted data", data);
@@ -60,25 +81,29 @@ function downloadFile() {
   });
 }
 
-function submitFigmaData(data: Object) {
-  fetch(`${API_ENDPOINT}/generate`, {
-    method: "POST",
-    body: JSON.stringify(data),
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-    .then(function (response: any) {
-      console.log("API response: ", response);
-      figma.ui.postMessage({
-        type: "show-md-preview",
-        payload: response,
-      });
-    })
-    .catch(function (error: any) {
-      console.log("API error: ", error);
+async function submitFigmaData(data: Object) {
+  try {
+    const pureResponse = await fetch(`${API_ENDPOINT}/generate`, {
+      method: "POST",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+      },
     });
+
+    const jsonResponse = await pureResponse.json();
+    console.log(jsonResponse.response);
+    FigmaEvent.generatingCodeSuccess(jsonResponse.response);
+  } catch (error) {
+    console.log("API error: ", error);
+  } finally {
+    FigmaEvent.generatingCodeFinished();
+  }
 }
+
+/**
+ * Utilities
+ */
 
 function btoa(input: string): string {
   const chars =
